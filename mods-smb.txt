@@ -1,0 +1,63 @@
+# Game modifications, compiled into the native code by recomp.py.
+# Format:  BANK ADDR  [BYTES] C-code
+# BYTES are the instruction's bytes in the ROM; the build stops if the ROM has something else
+# there. The C code runs just before the original instruction at that address (compiled code
+# only: an interpreter-only build runs the unmodified game).
+# Names are from doppelganger's SMB disassembly; tools/smbsyms.py gives their addresses.
+rom-sha1 33d23c2f2cfa4c9efec87f7bc1321ce3ce6c89bd
+
+# Simultaneous two-player mode (coop.c): "2 PLAYER GAME" on the title starts with Luigi
+# alongside Mario; in a one-player game player 2 can join with Start during play.
+# StartWorld1, "inc Hidden1UpFlag" after the menu's Start: a new game begins (at the level the
+# cheats choose, or at the saved level and checkpoint: save.c).
+0 82E9  [EE5D07] coop_new_game(); cheats_new_game(); save_new_game();
+# NMI start, every frame: notice the game leaving the level (the follower reappears afterwards);
+# the cheats (cheats.c) that hold every frame; saving progress (save.c).
+0 8082  [AD7807] coop_frame(); playground_frame(); cheats_frame(); save_frame();
+# GameCoreRoutine, "sta SavedJoypadBits": the leader plays with his own controller.
+0 AEF0  [8DFC06] coop_pads();
+# GameCoreRoutine, "lda OperMode_Task" just after "jsr GameRoutines" ran the leader: the
+# follower's turn (and the leader swap when he starts a pipe, vine, flagpole or the axe).
+0 AEF6  [AD7207] coop_turn();
+# PlayerEnemyCollision (enemies and power-ups) and PlayerHammerCollision (X = the object):
+# the follower is checked against the same object first.
+0 D853  [A509]   coop_collide(0xD853);
+0 D7C4  [A509]   coop_collide(0xD7C4);
+# ExecGameLoopback: a castle maze sends the leader back four pages, and the follower with him.
+0 C08C  [A56D]   coop_loopback();
+# DecTimers: the follower's copies of the player timers count down by the game's rule.
+0 8100  [A214]   coop_timers();
+# GameEngine, "ldx #$01" after the leader and block metatiles are drawn, and VictoryMode's
+# "lda OperMode_Task" (victory mode skips GameEngine): draw the follower.
+0 AF1C  [A201]   coop_draw();
+0 838E  [AD7207] coop_draw();
+# SetupVictoryMode and PlayerVictoryWalk: the follower joins the leader and walks to Toad with him.
+0 83B0  [AE1B07] coop_victory_walk(1);
+0 83BD  [A000]   coop_victory_walk(0);
+# WriteGameText, "dex" (X = the text): the status bar names the leader, MARIO or LUIGI.
+0 8839  [CA]     coop_name();
+# PrintVictoryMessages, PrintMsg (Y = the message): Toad and the princess thank the leader.
+0 843C  [98]     coop_thanks();
+# LargePlatformCollision and SmallPlatformCollision (X = the platform): the follower is checked
+# first; DrawLargePlatform and ChkSmallPlatCollision, after the platform moved: he is
+# carried along.
+0 DB45  [A9FF]   coop_platform(0);
+0 DB7B  [AD4707] coop_platform(1);
+0 E5C8  [BCE506] coop_ride(0);
+# RunLargePlatform, "lda TimerControl" before the platform's routine: a platform only the
+# follower stands on reacts to him (falls, tips, starts moving) and carries him.
+0 C971  [AD4707] coop_weigh();
+0 D671  [BDA203] coop_ride(1);
+# ProcFireball_Bubble: fireballs fly while either brother has fire power.
+0 B624  [AD5607] coop_fireballs();
+# FireballObjCore, "lda Player_X_Position" as a fireball just thrown sets off, and RunFB: one
+# the follower threw (coop_turn) sets off from him.
+0 B697  [A586]   coop_fireball(0);
+0 B6BE  [8A]     coop_fireball(1);
+# PlayerLoseLife: when time ran out, the follower loses a life too.
+0 91CD  [EE7407] coop_lose_life();
+# GetAreaDataAddrs, "ldy #$00" after the level and enemy pointers are loaded: with Up pressed
+# on the title screen (playground.c), the playground stands in for World 1-1.
+0 9C58  [A000]   playground_area();
+# ScrollScreen (Y = this frame's scroll): the screen doesn't scroll on past the follower.
+0 AFC4  [98]     coop_scroll();

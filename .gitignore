@@ -1,0 +1,8 @@
+rom/
+build/
+__pycache__/
+*.nes
+*.sav
+testroms/
+*.keystore
+ref/

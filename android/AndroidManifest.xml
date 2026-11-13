@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="local.recomp.NAME" android:versionCode="1" android:versionName="1.0">
+  <application android:label="LABEL" android:hasCode="true" android:debuggable="true"
+      android:isGame="true" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+    <activity android:name="android.app.NativeActivity" android:exported="true" android:launchMode="singleTask"
+        android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation">
+      <meta-data android:name="android.app.lib_name" android:value="NAME"/>
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+        <category android:name="android.intent.category.LAUNCHER"/>
+      </intent-filter>
+    </activity>
+    <!-- The cheats screen (Cheats.java): App info's "Additional settings in the app" opens it. -->
+    <activity android:name="local.recomp.Cheats" android:label="Cheats" android:exported="true"
+        android:theme="@android:style/Theme.DeviceDefault.Settings">
+      <intent-filter>
+        <action android:name="android.intent.action.APPLICATION_PREFERENCES"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>
