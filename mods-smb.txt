@@ -61,3 +61,7 @@ rom-sha1 33d23c2f2cfa4c9efec87f7bc1321ce3ce6c89bd
 0 9C58  [A000]   playground_area();
 # ScrollScreen (Y = this frame's scroll): the screen doesn't scroll on past the follower.
 0 AFC4  [98]     coop_scroll();
+# PlayerEnemyDiff's last "sbc" (piranha plants, Bullet Bills, hammer bros, Bowser, Lakitu face or move by
+# it) and ChkNearPlayer's "cmp" (Bloober's height): the enemy reacts to the nearer brother.
+0 E14C  [E56D]   coop_enemy_diff();
+0 CC2D  [C5CE]   coop_bloober();

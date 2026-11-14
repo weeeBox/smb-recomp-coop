@@ -24,6 +24,10 @@
 // - Moving platforms carry the follower too, and the ones that react to a rider (falling,
 //   balance and start-when-stepped-on platforms) react to either brother.
 //
+// - Enemies that aim at the player (turn to face him, fly or fire at him, hide from him, as the
+//   piranha plants do) aim at the nearer brother, by horizontal distance. A piranha plant stays in
+//   its pipe while either brother is near.
+//
 // - Fire power: the brothers share the game's two fireballs. A brother throws into the next one
 //   if it is free, by the game's own rules.
 
@@ -285,6 +289,32 @@ static int fb_swapped;
 void coop_fireball(int done) {
   if (!done && (fol_fireball & 1 << X)) { fol_fireball &= ~(1 << X); swap(); fb_swapped = 1; }
   else if (done && fb_swapped) { swap(); fb_swapped = 0; }
+}
+
+// Is the follower nearer than the leader (horizontally) to the enemy in slot X?
+static int fol_nearer(void) {
+  if (!coop_on || away || fol_in) return 0;
+  int e = ram[0x6E + X] << 8 | ram[0x87 + X];
+  return abs(e - (*F(0x6D) << 8 | *F(0x86))) < abs(e - (ram[0x6D] << 8 | ram[0x86]));
+}
+
+// $E14C in PlayerEnemyDiff, "sbc Player_PageLoc" (X = the enemy; every enemy that aims at the
+// player asks it: piranha plants, Bullet Bills, hammer bros, Bowser, Lakitu, spawn direction):
+// when the follower is nearer, it answers for him. $00 (the low byte of the difference) is
+// stored already, so redo it; A and the carry are set so the game's own subtraction of the
+// leader's page gives the follower's difference.
+void coop_enemy_diff(void) {
+  if (!fol_nearer()) return;
+  int e = ram[0x87 + X];
+  ram[0] = e - *F(0x86); C = e >= *F(0x86);
+  A += ram[0x6D] - *F(0x6D);
+}
+
+// $CC2D in ChkNearPlayer (a Bloober rises or sinks to the player's height), "cmp Player_Y_Position":
+// when the follower is nearer, A is set so that compare gives the result for his height.
+// ponytail: his height 0 (top of the screen) compares as if Mario's was 1.
+void coop_bloober(void) {
+  if (fol_nearer()) A = A >= *F(0xCE) ? ram[0xCE] : ram[0xCE] - 1;
 }
 
 // $AEF6, right after the leader's GameRoutines: the follower's turn.

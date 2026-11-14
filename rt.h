@@ -46,6 +46,8 @@ void coop_ride(int small);
 void coop_lose_life(void);
 void coop_weigh(void);
 void coop_scroll(void);
+void coop_enemy_diff(void);
+void coop_bloober(void);
 void playground_frame(void);
 void playground_area(void);
 u8 playground_rd(u16 a);

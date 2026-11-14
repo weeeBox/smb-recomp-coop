@@ -52,6 +52,9 @@ Rules:
   start-when-stepped-on platforms) react to either brother.
 - With fire power either brother throws fireballs; they share the game's two (a throw needs the
   next one free).
+- Enemies that aim at the player (hammer bros and Bowser facing him, Bullet Bills, Lakitu,
+  Bloobers, piranha plants hiding from him) aim at the nearer brother, by horizontal distance; a
+  piranha plant stays in its pipe while either brother is near.
 - The status bar names the leader (MARIO or LUIGI) over the shared score; Toad and the princess
   thank the brother who touched the axe, and the other walks to them with him.
 
