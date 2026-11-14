@@ -57,7 +57,7 @@ static const u16 SLICE[] = {
   0x400, 0x416, 0x433,             // X_MoveForce YMF_Dummy Y_MoveForce
   0x450, 0x456, 0x484, 0x490, 0x499,  // MaximumLeft/RightSpeed StompChainCounter CollisionBits BoundBoxCtrl
   0x4AC, 0x4AD, 0x4AE, 0x4AF,      // player bounding box
-  0x6D5, 0x6FF,                    // PlayerGfxOffset Player_X_Scroll
+  0x6D5, 0x6DB, 0x6FF,            // PlayerGfxOffset JumpspringForce Player_X_Scroll
   0x700, 0x701, 0x702, 0x703, 0x704, 0x705, 0x706, 0x707, 0x708, 0x709, 0x70A, 0x70B, 0x70C, 0x70D, 0x70E,  // speed, friction, jump, swim, anim, JumpspringAnimCtrl
   0x711,                           // FireballThrowingTimer (his throwing pose)
   0x714, 0x754, 0x755, 0x756,      // CrouchingFlag PlayerSize Player_Pos_ForScroll (set by his drawing) PlayerStatus
@@ -425,14 +425,15 @@ void coop_scroll(void) {
   if (room < Y) Y = room < 0 ? 0 : room;
 }
 
-// $B8BD in JumpspringHandler (after its first call) and $B90B (where it has drawn the spring): the spring nudges and launches the player in slot 0,
-// and holding A (a fresh press) makes the high bounce. JumpspringAnimCtrl is each brother's own
-// (he started it landing); when only the follower's is running, he takes slot 0 for the handler.
+// $B8BD in JumpspringHandler (after its first call) and $B90B (where it has drawn the spring):
+// the spring nudges and launches the player in slot 0, and holding A (a fresh press) makes the
+// high bounce. JumpspringAnimCtrl and JumpspringForce are each brother's own (he set them
+// landing); when only the follower's is running, he takes slot 0 for the handler.
 // If both stand on springs, the leader's goes first.
 static int sprung;       // the follower is in slot 0 for this spring's handler
 void coop_spring(int done) {
   static u8 pa;
-  if (!done && coop_on && !away && !fol_in && !ram[0x70E] && *F(0x70E)) {
+  if (!done && coop_on && !away && !fol_in && normal_play() && !ram[0x70E] && *F(0x70E)) {
     swap();
     pa = ram[0x0D]; ram[0x0D] = fol_pa;
     sprung = 1;
