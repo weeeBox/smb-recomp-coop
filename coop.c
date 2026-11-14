@@ -23,6 +23,8 @@
 //
 // - Moving platforms carry the follower too, and the ones that react to a rider (falling,
 //   balance and start-when-stepped-on platforms) react to either brother.
+// - Springs bounce whichever brother landed on them (high bounce: A held, from his controller);
+//   if both are on springs at once, the leader's goes first.
 //
 // - Fire power: the brothers share the game's two fireballs. A brother throws into the next one
 //   if it is free, by the game's own rules.
@@ -56,7 +58,7 @@ static const u16 SLICE[] = {
   0x450, 0x456, 0x484, 0x490, 0x499,  // MaximumLeft/RightSpeed StompChainCounter CollisionBits BoundBoxCtrl
   0x4AC, 0x4AD, 0x4AE, 0x4AF,      // player bounding box
   0x6D5, 0x6FF,                    // PlayerGfxOffset Player_X_Scroll
-  0x700, 0x701, 0x702, 0x703, 0x704, 0x705, 0x706, 0x707, 0x708, 0x709, 0x70A, 0x70B, 0x70C, 0x70D,  // speed, friction, jump, swim, anim
+  0x700, 0x701, 0x702, 0x703, 0x704, 0x705, 0x706, 0x707, 0x708, 0x709, 0x70A, 0x70B, 0x70C, 0x70D, 0x70E,  // speed, friction, jump, swim, anim, JumpspringAnimCtrl
   0x711,                           // FireballThrowingTimer (his throwing pose)
   0x714, 0x754, 0x755, 0x756,      // CrouchingFlag PlayerSize Player_Pos_ForScroll (set by his drawing) PlayerStatus
   0x75A,                           // NumberofLives: each brother has his own (1-ups go to who takes them)
@@ -124,7 +126,7 @@ static void respawn(int small) {
   x = x - 16 < left + 8 ? left + 8 : x - 16;
   *F(0x86) = x & 0xFF; *F(0x6D) = x >> 8;  // Player_X_Position, Player_PageLoc
   *F(0x0E) = 8;                            // GameEngineSubroutine: normal control
-  *F(0x9F) = 0; *F(0x57) = 0; *F(0x700) = 0;  // Y and X speed, XSpeedAbsolute: he starts standing
+  *F(0x9F) = 0; *F(0x57) = 0; *F(0x700) = 0; *F(0x70E) = 0;  // Y and X speed, XSpeedAbsolute, no spring: he starts standing
   if (small) { *F(0x754) = 1; *F(0x756) = 0; *F(0x79E) = 8; }  // small, InjuryTimer blinking
   else { *F(0x754) = size; *F(0x756) = status; }
   if (stuck()) to_leader();
@@ -287,6 +289,8 @@ void coop_fireball(int done) {
   else if (done && fb_swapped) { swap(); fb_swapped = 0; }
 }
 
+static u8 fol_pa;  // his A/B buttons of the frame before: the spring (enemy code, later) wants those
+
 // $AEF6, right after the leader's GameRoutines: the follower's turn.
 void coop_turn(void) {
   coop_set();
@@ -312,6 +316,7 @@ void coop_turn(void) {
   if (died == d) fol_throw();  // (killed, he is in slot 0 now, the leader)
   // GameEngine's SaveAB step, which runs for slot 0 only: remember this frame's A/B buttons (a
   // jump keeps rising while A stays held) and clear the left/right buttons.
+  fol_pa = *F(0x0D);
   *F(0x0D) = *F(0x0A); *F(0x0C) = 0;
   // Leader swap: he started a vine climb (1), side pipe (2), down pipe (3) or flagpole slide (4),
   // or touched Bowser's axe (the game switched to victory mode): he takes slot 0 and does it.
@@ -418,6 +423,25 @@ void coop_scroll(void) {
   if (free_cam || !coop_on || away || fol_in || !normal_play()) return;
   int room = (*F(0x6D) << 8 | *F(0x86)) - 8 - (ram[0x71A] << 8 | ram[0x71C]);  // ScreenLeft
   if (room < Y) Y = room < 0 ? 0 : room;
+}
+
+// $B8BD in JumpspringHandler (after its first call) and $B90B (where it has drawn the spring): the spring nudges and launches the player in slot 0,
+// and holding A (a fresh press) makes the high bounce. JumpspringAnimCtrl is each brother's own
+// (he started it landing); when only the follower's is running, he takes slot 0 for the handler.
+// If both stand on springs, the leader's goes first.
+static int sprung;       // the follower is in slot 0 for this spring's handler
+void coop_spring(int done) {
+  static u8 pa;
+  if (!done && coop_on && !away && !fol_in && !ram[0x70E] && *F(0x70E)) {
+    swap();
+    pa = ram[0x0D]; ram[0x0D] = fol_pa;
+    sprung = 1;
+  } else if (done && sprung) {
+    if (ram[0x70E] && !ram[0x786]) { ram[0x786] = 4; ram[0x70E]++; }  // the handler's last step, for his spring
+    ram[0x0D] = pa;
+    swap();
+    sprung = 0;
+  }
 }
 
 // $C08C, ExecGameLoopback (a castle maze sends the leader back four pages): the follower too.

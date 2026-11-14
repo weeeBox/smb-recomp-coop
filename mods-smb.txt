@@ -61,3 +61,7 @@ rom-sha1 33d23c2f2cfa4c9efec87f7bc1321ce3ce6c89bd
 0 9C58  [A000]   playground_area();
 # ScrollScreen (Y = this frame's scroll): the screen doesn't scroll on past the follower.
 0 AFC4  [98]     coop_scroll();
+# JumpspringHandler, "lda TimerControl" after its first call, and "lda JumpspringAnimCtrl" after
+# the spring is drawn: a spring the follower landed on bounces him, not the leader.
+0 B8BD  [AD4707] coop_spring(0);
+0 B90B  [AD0E07] coop_spring(1);

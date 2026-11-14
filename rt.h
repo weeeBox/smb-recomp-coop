@@ -45,6 +45,7 @@ void coop_platform(int small);
 void coop_ride(int small);
 void coop_lose_life(void);
 void coop_weigh(void);
+void coop_spring(int done);
 void coop_scroll(void);
 void playground_frame(void);
 void playground_area(void);
