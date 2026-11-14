@@ -24,6 +24,9 @@
 // - Moving platforms carry the follower too, and the ones that react to a rider (falling,
 //   balance and start-when-stepped-on platforms) react to either brother.
 //
+// - Water: whirlpools pull the follower by the same rule as the leader, and he breathes bubbles on
+//   his own timer, into a bubble slot the leader's don't need.
+//
 // - Fire power: the brothers share the game's two fireballs. A brother throws into the next one
 //   if it is free, by the game's own rules.
 
@@ -62,6 +65,7 @@ static const u16 SLICE[] = {
   0x75A,                           // NumberofLives: each brother has his own (1-ups go to who takes them)
   0x781, 0x782, 0x783, 0x785, 0x789,  // frame timers: anim, jump/swim, running, side collision, climb
   0x79E, 0x79F,                    // interval timers: InjuryTimer StarInvincibleTimer
+  0x47D, 0x792,                    // Whirlpool_Flag (in a whirlpool), AirBubbleTimer (his bubbles' pace)
 };
 #define NSLICE (int)(sizeof SLICE / sizeof SLICE[0])
 // Shared screen state the follower's turn must leave alone: he never scrolls the camera.
@@ -423,6 +427,23 @@ void coop_scroll(void) {
 // $C08C, ExecGameLoopback (a castle maze sends the leader back four pages): the follower too.
 void coop_loopback(void) {
   if (coop_on && !away) *F(0x6D) -= 4;
+}
+
+// $B7B8 ProcessWhirlpools, before the leader's: the follower is pulled by the game's own routine.
+void coop_whirlpool(void) {
+  if (coop_on && !away && !fol_in && normal_play()) run_as_follower(0xB7B8, 0);
+}
+
+// $B706 in BubbleCheck, a free bubble slot (X) while the leader's bubble timer hasn't expired: if
+// the follower's has, his bubble takes the slot (SetupBubble with his timer and position).
+// ponytail: only when the leader has no bubble due; with all 3 slots busy he waits.
+void coop_bubble(void) {
+  if (!coop_on || away || fol_in || !normal_play() || !ram[0x792] || *F(0x792)) return;
+  u8 sx = X;
+  swap();
+  call6502(0xB70B);
+  swap();
+  X = sx;
 }
 
 // $8100, DecTimers: the follower's timers tick by the same rule as the game's. Frame timers

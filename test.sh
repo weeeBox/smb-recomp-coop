@@ -270,6 +270,11 @@ printf '0 keys 00 00\n200 keys 08 00\n210 keys 00 00\n500 cheats time=1\n' > bui
 clock() { $B --replay build/t-rec.txt --frames "$1" --ramdump build/t.bin 2>/dev/null; xxd -p -s 0x7F8 -l 3 build/t.bin; }
 c450=$(clock 450); c600=$(clock 600)
 if [ "$c450" != "$c600" ] && [ "$c600" = "$(clock 900)" ]; then echo "PASS replay: a cheat from its frame on"; else echo "FAIL replay: clock $c450 $c600"; fail=1; fi
+# Whirlpools (2-2, page 4 from x 16 to 112) pull Luigi too: Mario is flown to just past it (4:$8C),
+# Luigi is put inside it (4:$60) at frame 1600; 20 frames on he is 10 pixels nearer its centre.
+COOPSET="1600:6D:4,1600:86:60,1600:CE:40,1600:9F:0,1600:57:0" COOPFREECAM=1 COOPLOG=1 $B --frames 1625 --cheats "world=2 level=2" \
+  --keys "$MENU2,800:80,1500:00" --poke "800-1700:00CE:40,800-1700:009F:00,800-1700:00B5:01,800-1700:079F:20,1560-1700:006D:04,1560-1700:0086:8C" 2>&1 | grep '^f1620 ' > build/t-wp.txt
+check "a whirlpool pulls Luigi too" "$(sed 's/.* x=\([0-9]*\) .*/\1/' build/t-wp.txt)" 1110
 # The ROM is data the user supplies; any other file must be refused.
 $B --rom testroms/nestest.nes --frames 1 >/dev/null 2>&1
 if [ $? = 1 ]; then echo "PASS a different ROM file is refused"; else echo "FAIL a different ROM was accepted"; fail=1; fi
