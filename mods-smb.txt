@@ -61,3 +61,7 @@ rom-sha1 33d23c2f2cfa4c9efec87f7bc1321ce3ce6c89bd
 0 9C58  [A000]   playground_area();
 # ScrollScreen (Y = this frame's scroll): the screen doesn't scroll on past the follower.
 0 AFC4  [98]     coop_scroll();
+# GameEngine, the leader's star check ("lda StarInvincibleTimer", "cmp #$04"): the star music ends
+# when the last brother's star runs down.
+0 AF41  [AD9F07] coop_star(0);
+0 AF46  [C904]   coop_star(1);

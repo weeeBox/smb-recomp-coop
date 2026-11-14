@@ -24,6 +24,10 @@
 // - Moving platforms carry the follower too, and the ones that react to a rider (falling,
 //   balance and start-when-stepped-on platforms) react to either brother.
 //
+// - Star power: each brother has his own star timer; the star music ends when the last star does,
+//   and the follower flashes in the star colours like the leader. Reappearing, he keeps his own
+//   timers (a new brother has none).
+//
 // - Fire power: the brothers share the game's two fireballs. A brother throws into the next one
 //   if it is free, by the game's own rules.
 
@@ -116,9 +120,10 @@ static void to_leader(void) {  // the one place sure to be free: where the leade
 // The follower takes the leader's place, 16 pixels behind him (on him if that is in a wall);
 // small and blinking after a death.
 static void respawn(int small) {
-  u8 size = *F(0x754), status = *F(0x756), lives = *F(0x75A);  // his own, kept
+  u8 size = *F(0x754), status = *F(0x756), lives = *F(0x75A), hurt = *F(0x79E), star = *F(0x79F);  // his own, kept
   for (int i = 0; i < NSLICE; i++) fol[i] = ram[SLICE[i]];
-  if (fresh_lives) fresh_lives = 0; else *F(0x75A) = lives;  // (joining mid-level: the leader's)
+  if (fresh_lives) { fresh_lives = 0; hurt = star = 0; } else *F(0x75A) = lives;  // (joining mid-level: the leader's lives, no timers)
+  *F(0x79E) = hurt; *F(0x79F) = star;  // his InjuryTimer and star, not the leader's
   int x = ram[0x6D] << 8 | ram[0x86];
   int left = ram[0x71A] << 8 | ram[0x71C];
   x = x - 16 < left + 8 ? left + 8 : x - 16;
@@ -251,6 +256,18 @@ void coop_frame(void) {
     }
 }
 
+// $AF41 and $AF46 in GameEngine, which end the star music when the leader's star timer reaches 4
+// (and run his flash): the music ends when the last brother's star does. Before the compare (1),
+// a leader's 4 reads as 5 while the follower's star runs on; before the leader's timer is read
+// (0), the follower's 4 ends the music the game's way when the leader's is not at 4 himself
+// (the game calls GetAreaMusic itself then).
+void coop_star(int cmp) {
+  if (!coop_on || away || fol_in) return;
+  u8 f = *F(0x79F);
+  if (cmp) { if (A == 4 && f > 4) A = 5; }
+  else if (f == 4 && !ram[0x77F] && ram[0x79F] != 4 && ram[0xB5] < 2) call6502(0x90ED);
+}
+
 // ProcFireball_Bubble's throw, for the follower: the game's own runs for slot 0 only, later this
 // frame, when his B press is already remembered as the previous frame's. Same rules: fire power,
 // a fresh B press, the next of the two fireballs free, not crouching, climbing or off screen.
@@ -323,9 +340,9 @@ void coop_turn(void) {
     for (int i = 0; i < 5; i++) ppu_poke(0x2043 + i, NAMES[luigi_leads][i]);
   }
   if (getenv("COOPLOG"))  // debug aid: the follower's state after each of his turns
-    fprintf(stderr, "f%d %s leads (lives %d); follower lives=%d x=%d y=%d yspd=%d state=%d mode=%02X ab=%02X prevab=%02X\n", frame_no,
+    fprintf(stderr, "f%d %s leads (lives %d); follower lives=%d x=%d y=%d yspd=%d state=%d mode=%02X ab=%02X prevab=%02X hurt=%d star=%d\n", frame_no,
             luigi_leads ? "luigi" : "mario", ram[0x75A], *F(0x75A), *F(0x6D) << 8 | *F(0x86), *F(0xCE), (int8_t)*F(0x9F), *F(0x1D),
-            *F(0x0E), *F(0x0A), *F(0x0D));
+            *F(0x0E), *F(0x0A), *F(0x0D), *F(0x79E), *F(0x79F));
 }
 
 // $82E9 in StartWorld1, as a new game starts from the title menu. "2 PLAYER GAME" starts the
@@ -470,6 +487,10 @@ void coop_draw(void) {
   static u8 page[256];
   memcpy(page, ram + 0x200, 256);
   for (int i = 0; i < 256; i += 4) ram[0x200 + i] = 0xF8;  // all hidden: what shows is his
+  if (*F(0xB5) < 2) {  // his star flash, by the game's rule (CyclePlayerPalette, ResetPalStar)
+    u8 f = *F(0x79F), c = f ? ram[0x09] >> (f >= 8 ? 1 : 3) & 3 : 0;
+    *F(0x3C4) = *F(0x3C4) & ~3 | c;
+  }
   swap();
   call6502(0xF180); call6502(0xF12A); call6502(0xEEE9);  // GetPlayerOffscreenBits, RelativePlayerPosition, PlayerGfxHandler
   swap();
