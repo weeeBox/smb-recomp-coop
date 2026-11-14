@@ -59,6 +59,7 @@ void coop_draw(void);
 void coop_fireball(int done);
 void coop_firebar(void);
 void coop_fireballs(void);
+void coop_star(int cmp);
 void coop_victory_walk(int setup);
 void coop_name(void);
 void ppu_poke(u16 a, u8 v);

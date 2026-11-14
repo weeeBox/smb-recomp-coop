@@ -81,6 +81,37 @@ COOPSET="500:6D:1,500:86:0,500:CE:B0,500:9F:0,500:57:0" RAMLOG=build/t-ram.bin $
   --keys "$MENU2,370:82,470:00" --keys2 "520:01,545:00" --poke "500-500:006D:01,500-500:0086:00,500-500:00CE:70,500-500:009F:00,500-500:0057:00" 2>/dev/null
 check "Luigi's held jump reaches the block (coin)" "$(ram 560 75E)" 1
 check "Mario on the bumped block stays standing" "$(ram 545 CE):$(ram 545 1D)" "112:0"
+# Star power, each brother's own. Luigi picks up a star (his timer set at frame 380) and the star
+# music starts ($F4 is $40 while it plays). It ends with the last star: with Luigi's alone (by
+# frame 1499), and not before it when Mario's shorter one has ended (frame 600).
+COOPSET="380:79F:23" RAMLOG=build/t-ram.bin $B --frames 1500 --keys "$MENU2" --poke "380-380:00FB:40" 2>/dev/null
+check "star music ends when Luigi's star does" "$([ "$(ram 1499 F4)" = 64 ] && echo playing || echo ended)" ended
+COOPSET="380:79F:23" RAMLOG=build/t-ram.bin $B --frames 700 --keys "$MENU2" --poke "380-380:00FB:40,380-380:079F:08" 2>/dev/null
+check "  and plays on after Mario's has ended" "$(ram 600 F4)" 64
+COOPSET="380:79F:08" RAMLOG=build/t-ram.bin $B --frames 700 --keys "$MENU2" --poke "380-380:00FB:40,380-380:079F:23" 2>/dev/null
+check "  and plays on after Luigi's has ended first" "$(ram 600 F4)" 64
+# A brother who joins mid-level has no star or injury timer, though Mario has them.
+e=$(COOPLOG=1 $B --frames 450 --keys "200:08,210:00" --keys2 "400:08,410:00" --poke "380-420:079F:80,380-420:079E:80" 2>&1)
+check "Luigi joins with no timers of Mario's" "$(echo "$e" | grep '^f440 ' | sed 's/.* hurt=\([0-9]*\) star=\([0-9]*\)/\1:\2/')" "0:0"
+# Mario dies (falls) while Luigi has a star: the restart clears Luigi's star, as in the original game.
+e=$(COOPSET="380:79F:23" COOPLOG=1 $B --frames 1000 --keys "$MENU2" --poke "380-380:00FB:40,450-452:00B5:02" 2>&1)
+check "a death restart clears Luigi's star" "$(echo "$e" | grep '^f999 ' | sed 's/.* star=//')" 0
+# Luigi leaves with a pipe and Mario, the follower, reappears in the coin room with his own star
+# (about 24 left; the new area clears the leader's timer, so Mario must not start from 0).
+e=$(RAMLOG=build/t-ram.bin COOPSET="$(lfly 949 28),950:6D:3,950:86:98,950:CE:70,950:B5:1,950:9F:0,950:57:0,950:1D:0,949:79F:60" COOPLOG=1 $B --frames 1100 \
+  --keys "$MENU2,370:82,915:00" --keys2 "370:82,915:00,960:20,1100:00" --poke "$(fly 930)" 2>&1)
+st=$(echo "$e" | grep '^f1099 ' | sed 's/.* star=//')
+check "Mario keeps his own star into the coin room" "$([ "$st" -gt 0 ] && [ "$st" -le 32 ] && echo own || echo "star $st")" own
+check "  and the star music comes back with him" "$(ram 1099 F4)" 64
+# Luigi flashes with his star: his pixels (left of Mario, ground rows) change from one frame to
+# the next (the game's cycle for Mario changes every 2 frames), with no star they stand still.
+for f in 600 602; do COOPSET="380-700:79F:23" $B --frames $f --keys "$MENU2" --shot build/t-lstar$f.bmp 2>/dev/null; done
+for f in 600 602; do $B --frames $f --keys "$MENU2" --shot build/t-lplain$f.bmp 2>/dev/null; done
+crop() { python3 -I -c "
+import sys,struct,hashlib; d=open(sys.argv[1],'rb').read(); o=struct.unpack('<I',d[10:14])[0]
+print(hashlib.md5(b''.join(d[o+((239-y)*256)*3:o+((239-y)*256+100)*3] for y in range(160,216))).hexdigest())" "$1"; }
+check "Luigi flashes with his star" "$([ "$(crop build/t-lstar600.bmp)" != "$(crop build/t-lstar602.bmp)" ] && echo flash || echo still)" flash
+check "  and stands still without one" "$([ "$(crop build/t-lplain600.bmp)" = "$(crop build/t-lplain602.bmp)" ] && echo still || echo flash)" still
 # Flagpole: Mario lands short of the pole, Luigi drifts into it: Luigi takes the pole (slot 0
 # sliding, mode 4) and the game moves on to 1-2.
 e=$(COOPSET="$(lfly 2439 28),2440:6D:C,2440:86:4E,2440:CE:28,2440:B5:1,2440:9F:0,2440:57:0" COOPLOG=1 RAMLOG=build/t-ram.bin $B --frames 3200 \

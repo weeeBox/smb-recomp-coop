@@ -246,7 +246,7 @@ static void render_line(int y, i64 dot0) {
         int bit = o[2] & 0x40 ? b : 7 - b, px = o[3] + b;
         u8 c = ((chr[a] >> bit) & 1) | (((chr[a + 8] >> bit) & 1) << 1);
         if (!c || px > 255 || (px < 8 && !(mask & 4))) continue;
-        sp[px] = 0x40 | c;
+        sp[px] = 0x50 | ((o[2] & 3) << 2) | c;  // his palette bits: the star flash
         info[px] = (o[2] >> 5) & 1;
       }
     }
@@ -276,7 +276,7 @@ static void render_line(int y, i64 dot0) {
     if (s && b && (info[x] & 2) && x != 255 && s0_dot < 0) s0_dot = dot0 + x + 2;
     int show_s = s && (!b || !(info[x] & 1));
     const u8 *lc;  // coop.c: the follower in his own colours, the leader (sprite palette 0) in his
-    u8 ci = show_s && (s & 0x40) ? follower_colors()[s & 3]
+    u8 ci = show_s && (s & 0x4c) == 0x40 ? follower_colors()[s & 3]
           : show_s && (s & 0x1c) == 0x10 && (lc = leader_colors()) ? lc[s & 3] : pal[show_s ? s & 0x1f : b];
     fb[y * 256 + x] = NESPAL[ci & 0x3f];
   }
