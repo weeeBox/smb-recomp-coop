@@ -128,7 +128,7 @@ static int stuck(void) {  // his feet's row, and his head's when big (bounding b
 }
 static void to_leader(void) {  // the one place sure to be free: where the leader is
   *F(0x6D) = ram[0x6D]; *F(0x86) = ram[0x86]; *F(0xCE) = ram[0xCE]; *F(0xB5) = ram[0xB5];
-  *F(0x57) = 0; *F(0x700) = 0;  // X speed, XSpeedAbsolute
+  *F(0x57) = 0; *F(0x700) = 0; *F(0x70E) = 0;  // X speed, XSpeedAbsolute; a spring's bounce stays with the spring
 }
 
 // The follower takes the leader's place, 16 pixels behind him (on him if that is in a wall);
@@ -138,7 +138,9 @@ static void respawn(int small) {
   for (int i = 0; i < NSLICE; i++) fol[i] = ram[SLICE[i]];
   if (fresh_lives) { fresh_lives = 0; hurt = star = 0; } else *F(0x75A) = lives;  // (joining mid-level: the leader's lives, no timers)
   *F(0x79E) = hurt; *F(0x79F) = star;  // his InjuryTimer and star, not the leader's
-  if (star > 4) ram[0xFB] = 0x40;      // (the new area's music has replaced the star music)
+  // the new area's music has replaced the star music; but not over star music still playing (the
+  // computer's Luigi back from a pit: it would start over) or the victory music
+  if (star > 4 && ram[0xF4] != 0x40 && ram[0x770] == 1) ram[0xFB] = 0x40;
   int x = ram[0x6D] << 8 | ram[0x86];
   int left = ram[0x71A] << 8 | ram[0x71C];
   x = x - 16 < left + 8 ? left + 8 : x - 16;

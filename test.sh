@@ -103,6 +103,11 @@ e=$(RAMLOG=build/t-ram.bin COOPSET="$(lfly 949 28),950:6D:3,950:86:98,950:CE:70,
 st=$(echo "$e" | grep '^f1099 ' | sed 's/.* star=//')
 check "Mario keeps his own star into the coin room" "$([ "$st" -gt 0 ] && [ "$st" -le 32 ] && echo own || echo "star $st")" own
 check "  and the star music comes back with him" "$(ram 1099 F4)" 64
+# The computer's Luigi with a star, dropped below the screen (450), is put back by Mario with
+# his star: the star music, already playing, goes on (its position $F7 keeps counting up; it
+# used to start over, back to 2).
+COOPSET="380:79F:23,450-450:B5:2,450-450:CE:F0" RAMLOG=build/t-ram.bin $B --bot --frames 470 --keys "$MENU2" --poke "380-380:00FB:40" 2>/dev/null
+check "the computer's Luigi back from a pit doesn't restart the star music" "$(ram 449 F7):$([ "$(ram 452 F7)" -ge "$(ram 449 F7)" ] && echo on || echo restarted)" "10:on"
 # Luigi flashes with his star: his pixels (left of Mario, ground rows) change from one frame to
 # the next (the game's cycle for Mario changes every 2 frames), with no star they stand still.
 for f in 600 602; do COOPSET="380-700:79F:23" $B --frames $f --keys "$MENU2" --shot build/t-lstar$f.bmp 2>/dev/null; done
@@ -111,6 +116,23 @@ crop() { python3 -I -c "
 import sys,struct,hashlib; d=open(sys.argv[1],'rb').read(); o=struct.unpack('<I',d[10:14])[0]
 print(hashlib.md5(b''.join(d[o+((239-y)*256)*3:o+((239-y)*256+100)*3] for y in range(160,216))).hexdigest())" "$1"; }
 check "Luigi flashes with his star" "$([ "$(crop build/t-lstar600.bmp)" != "$(crop build/t-lstar602.bmp)" ] && echo flash || echo still)" flash
+# ... in the star colours: frame by frame (600-607) against the same frame without a star, each of
+# his 3 colours becomes one other colour (a recolouring, not a move), in at least 3 different
+# ways (the game's star palettes), and some frames show him in his own.
+for f in 600 601 602 603 604 605 606 607; do COOPSET="380-700:79F:23" $B --frames $f --keys "$MENU2" --shot build/t-ls$f.bmp 2>/dev/null
+  $B --frames $f --keys "$MENU2" --shot build/t-lp$f.bmp 2>/dev/null; done
+n=$(python3 -I -c "
+import struct
+def px(fn):
+  d=open(fn,'rb').read(); o=struct.unpack('<I',d[10:14])[0]
+  return {(x,y):d[o+((239-y)*256+x)*3:o+((239-y)*256+x)*3+3] for y in range(160,216) for x in range(0,100)}
+maps=[]
+for f in range(600,608):
+  s,p=px('build/t-ls%d.bmp'%f),px('build/t-lp%d.bmp'%f); m=frozenset((p[k],s[k]) for k in s if s[k]!=p[k])
+  if m and len(m)!=3 or len({a for a,b in m})!=len(m): print('not a recolouring at',f); break
+  maps.append(m)
+else: print(len({m for m in maps if m}), 'own' if frozenset() in maps else 'never own')")
+check "  in the star colours (palettes cycled, his own between)" "$n" "3 own"
 check "  and stands still without one" "$([ "$(crop build/t-lplain600.bmp)" = "$(crop build/t-lplain602.bmp)" ] && echo still || echo flash)" still
 # Flagpole: Mario lands short of the pole, Luigi drifts into it: Luigi takes the pole (slot 0
 # sliding, mode 4) and the game moves on to 1-2.
@@ -323,6 +345,15 @@ check "Mario's high bounce is not Luigi's" "$(ram 433 9F):$(echo "$e" | grep '^f
 COOPFREECAM=1 COOPSET="600-900:6D:01,600-900:86:E4,600-900:CE:A4,600-900:9F:00,600-900:B5:01" RAMLOG=build/t-ram.bin \
   $B --cheats "world=1 level=4" --frames 901 --keys "$MENU2,300:80" --poke "380-900:00CE:20,380-900:009F:00,380-900:00B5:01,380-900:079F:20" >/dev/null 2>&1
 check "a fire bar kills Luigi" "$(ram 700 0E):$(ram 700 6D)" "11:1"
+# ... by Luigi's own timers and size: with his star, or blinking after a hit, the same bar never
+# touches him (Mario still leads at 900: mode 8, page 2); big, it shrinks him (his mode $0A)
+# and he lives on.
+fb() { COOPFREECAM=1 COOPSET="600-900:6D:01,600-900:86:E4,600-900:CE:A4,600-900:9F:00,600-900:B5:01,$1" COOPLOG=1 RAMLOG=build/t-ram.bin \
+  $B --cheats "world=1 level=4" --frames 901 --keys "$MENU2,300:80" --poke "380-900:00CE:20,380-900:009F:00,380-900:00B5:01,380-900:079F:20" 2>&1 >/dev/null; }
+fb "600-900:79F:20" >/dev/null; check "  but not Luigi with his star" "$(ram 900 0E):$(ram 900 6D)" "8:2"
+fb "600-900:79E:20" >/dev/null; check "  nor Luigi blinking after a hit" "$(ram 900 0E):$(ram 900 6D)" "8:2"
+e=$(fb "600-600:754:00,600-600:756:01")
+check "  and big Luigi shrinks" "$(echo "$e" | grep -q 'follower.*mode=0A' && echo shrank):$(ram 900 0E):$(ram 900 6D)" "shrank:8:2"
 # Piranha plant (1-2, page 6 x 120): it stays in its pipe while EITHER brother is within 32 pixels
 # of it. Both brothers walk and hop (star power; Luigi's height held so no pit takes him) to
 # where Mario stops, 120 pixels short of the plant. From frame 1625 Luigi stands beside its pipe
