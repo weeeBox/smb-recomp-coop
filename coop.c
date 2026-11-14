@@ -26,7 +26,7 @@
 //
 // - Star power: each brother has his own star timer; the star music ends when the last star does,
 //   and the follower flashes in the star colours like the leader. Reappearing, he keeps his own
-//   timers (a new brother has none).
+//   timers (a new brother has none), but a death restart clears them as in the original game.
 //
 // - Fire power: the brothers share the game's two fireballs. A brother throws into the next one
 //   if it is free, by the game's own rules.
@@ -124,6 +124,7 @@ static void respawn(int small) {
   for (int i = 0; i < NSLICE; i++) fol[i] = ram[SLICE[i]];
   if (fresh_lives) { fresh_lives = 0; hurt = star = 0; } else *F(0x75A) = lives;  // (joining mid-level: the leader's lives, no timers)
   *F(0x79E) = hurt; *F(0x79F) = star;  // his InjuryTimer and star, not the leader's
+  if (star > 4) ram[0xFB] = 0x40;      // (the new area's music has replaced the star music)
   int x = ram[0x6D] << 8 | ram[0x86];
   int left = ram[0x71A] << 8 | ram[0x71C];
   x = x - 16 < left + 8 ? left + 8 : x - 16;
@@ -416,10 +417,13 @@ void coop_ride(int small) {
   A = sa; X = x;
 }
 
-// $91CD PlayerLoseLife, before the game takes the leader's life: if time ran out
+// $91CD PlayerLoseLife, before the game takes the leader's life: the survivor's InjuryTimer and star
+// end with the restart; if time ran out
 // (GameTimerExpiredFlag), the follower loses one too, and his last one ends the game.
 void coop_lose_life(void) {
-  if (!coop_on || !ram[0x759]) return;
+  if (!coop_on) return;
+  *F(0x79E) = *F(0x79F) = 0;  // any death restarts the level, which clears the timers (the leader's by the game)
+  if (!ram[0x759]) return;
   if ((*F(0x75A))-- == 0) ram[0x75A] = 0;  // the game's own count then runs out: game over
 }
 

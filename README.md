@@ -54,7 +54,8 @@ Rules:
   next one free).
 - Each brother has his own star timer: the star music ends when the last star does, and Luigi
   flashes in the star colours like Mario. A brother who reappears (new area, joining mid-level)
-  keeps his own timers; a new one has none.
+  keeps his own timers (the star music comes back with him); a new one has none. A death restart
+  clears them, as in the original game.
 - The status bar names the leader (MARIO or LUIGI) over the shared score; Toad and the princess
   thank the brother who touched the axe, and the other walks to them with him.
 
