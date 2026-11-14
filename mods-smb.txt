@@ -54,6 +54,9 @@ rom-sha1 33d23c2f2cfa4c9efec87f7bc1321ce3ce6c89bd
 # the follower threw (coop_turn) sets off from him.
 0 B697  [A586]   coop_fireball(0);
 0 B6BE  [8A]     coop_fireball(1);
+# FirebarCollision, "tya" after the segment is drawn (Y = its OAM offset): the follower is checked
+# against the same segment first.
+0 CE0B  [98]     coop_firebar();
 # PlayerLoseLife: when time ran out, the follower loses a life too.
 0 91CD  [EE7407] coop_lose_life();
 # GetAreaDataAddrs, "ldy #$00" after the level and enemy pointers are loaded: with Up pressed

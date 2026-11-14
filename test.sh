@@ -270,6 +270,12 @@ printf '0 keys 00 00\n200 keys 08 00\n210 keys 00 00\n500 cheats time=1\n' > bui
 clock() { $B --replay build/t-rec.txt --frames "$1" --ramdump build/t.bin 2>/dev/null; xxd -p -s 0x7F8 -l 3 build/t.bin; }
 c450=$(clock 450); c600=$(clock 600)
 if [ "$c450" != "$c600" ] && [ "$c600" = "$(clock 900)" ]; then echo "PASS replay: a cheat from its frame on"; else echo "FAIL replay: clock $c450 $c600"; fail=1; fi
+# Fire bars hurt Luigi too (1-4: a bar at x=484 y=164). Mario is flown out of the way (x~517);
+# Luigi parked in the bar's path (page 1, x $E4, y $A4) for frames 600-900 is killed by it: he
+# takes slot 0 dying (mode $0B) and, as the leader, loses his life (Mario's two are kept).
+COOPFREECAM=1 COOPSET="600-900:6D:01,600-900:86:E4,600-900:CE:A4,600-900:9F:00,600-900:B5:01" RAMLOG=build/t-ram.bin \
+  $B --cheats "world=1 level=4" --frames 901 --keys "$MENU2,300:80" --poke "380-900:00CE:20,380-900:009F:00,380-900:00B5:01,380-900:079F:20" >/dev/null 2>&1
+check "a fire bar kills Luigi" "$(ram 700 0E):$(ram 700 6D)" "11:1"
 # The ROM is data the user supplies; any other file must be refused.
 $B --rom testroms/nestest.nes --frames 1 >/dev/null 2>&1
 if [ $? = 1 ]; then echo "PASS a different ROM file is refused"; else echo "FAIL a different ROM was accepted"; fail=1; fi

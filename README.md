@@ -50,6 +50,7 @@ Rules:
 - Bumping a block a brother stands on doesn't move him; the block bounces under his feet.
 - Moving platforms carry both brothers, and the ones that react to a rider (falling, balance and
   start-when-stepped-on platforms) react to either brother.
+- Fire bars hurt either brother, by his own star and injury timers.
 - With fire power either brother throws fireballs; they share the game's two (a throw needs the
   next one free).
 - The status bar names the leader (MARIO or LUIGI) over the shared score; Toad and the princess
