@@ -259,13 +259,13 @@ void coop_frame(void) {
 // $AF41 and $AF46 in GameEngine, which end the star music when the leader's star timer reaches 4
 // (and run his flash): the music ends when the last brother's star does. Before the compare (1),
 // a leader's 4 reads as 5 while the follower's star runs on; before the leader's timer is read
-// (0), the follower's 4 ends the music the game's way when the leader's is not at 4 himself
-// (the game calls GetAreaMusic itself then).
+// (0), the follower's 4 ends the music when the leader's star is already below 4 (at 4 the game
+// calls GetAreaMusic itself, above it his star plays on), and he is not below the screen.
 void coop_star(int cmp) {
   if (!coop_on || away || fol_in) return;
   u8 f = *F(0x79F);
   if (cmp) { if (A == 4 && f > 4) A = 5; }
-  else if (f == 4 && !ram[0x77F] && ram[0x79F] != 4 && ram[0xB5] < 2) call6502(0x90ED);
+  else if (f == 4 && !ram[0x77F] && ram[0x79F] < 4 && *F(0xB5) < 2) call6502(0x90ED);
 }
 
 // ProcFireball_Bubble's throw, for the follower: the game's own runs for slot 0 only, later this

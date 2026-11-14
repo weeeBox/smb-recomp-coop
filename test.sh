@@ -88,11 +88,13 @@ COOPSET="380:79F:23" RAMLOG=build/t-ram.bin $B --frames 1500 --keys "$MENU2" --p
 check "star music ends when Luigi's star does" "$([ "$(ram 1499 F4)" = 64 ] && echo playing || echo ended)" ended
 COOPSET="380:79F:23" RAMLOG=build/t-ram.bin $B --frames 700 --keys "$MENU2" --poke "380-380:00FB:40,380-380:079F:08" 2>/dev/null
 check "  and plays on after Mario's has ended" "$(ram 600 F4)" 64
+COOPSET="380:79F:08" RAMLOG=build/t-ram.bin $B --frames 700 --keys "$MENU2" --poke "380-380:00FB:40,380-380:079F:23" 2>/dev/null
+check "  and plays on after Luigi's has ended first" "$(ram 600 F4)" 64
 # A brother who joins mid-level has no star or injury timer, though Mario has them.
 e=$(COOPLOG=1 $B --frames 450 --keys "200:08,210:00" --keys2 "400:08,410:00" --poke "380-420:079F:80,380-420:079E:80" 2>&1)
 check "Luigi joins with no timers of Mario's" "$(echo "$e" | grep '^f440 ' | sed 's/.* hurt=\([0-9]*\) star=\([0-9]*\)/\1:\2/')" "0:0"
 # Luigi leaves with a pipe and Mario, the follower, reappears in the coin room with his own star
-# (about 24 left), not Luigi's (0x60 at the pipe).
+# (about 24 left; the new area clears the leader's timer, so Mario must not start from 0).
 e=$(COOPSET="$(lfly 949 28),950:6D:3,950:86:98,950:CE:70,950:B5:1,950:9F:0,950:57:0,950:1D:0,949:79F:60" COOPLOG=1 $B --frames 1100 \
   --keys "$MENU2,370:82,915:00" --keys2 "370:82,915:00,960:20,1100:00" --poke "$(fly 930)" 2>&1)
 st=$(echo "$e" | grep '^f1099 ' | sed 's/.* star=//')
