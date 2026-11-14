@@ -52,6 +52,7 @@ Rules:
   start-when-stepped-on platforms) react to either brother.
 - Springs bounce whichever brother landed on them (A held for the high bounce, from his own
   controller); if both are on springs at once, the leader's goes first.
+- Fire bars hurt either brother, by his own star and injury timers.
 - With fire power either brother throws fireballs; they share the game's two (a throw needs the
   next one free).
 - The status bar names the leader (MARIO or LUIGI) over the shared score; Toad and the princess

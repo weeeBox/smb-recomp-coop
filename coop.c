@@ -26,6 +26,8 @@
 // - Springs bounce whichever brother landed on them (high bounce: A held, from his controller);
 //   if both are on springs at once, the leader's goes first.
 //
+// - Fire bars hurt either brother, by his own star and injury timers.
+//
 // - Fire power: the brothers share the game's two fireballs. A brother throws into the next one
 //   if it is free, by the game's own rules.
 
@@ -348,6 +350,20 @@ void coop_new_game(void) {
 // check the follower against the same object first.
 void coop_collide(u16 addr) {
   if (coop_on && !away && !fol_in && normal_play()) run_as_follower(addr, 0);
+}
+
+// $CE0B FirebarCollision, after the segment is drawn ($06/$07 = its screen X/Y): the follower is
+// checked against it by the same routine, hurting or killing him by his own star and injury
+// timers. The routine compares the OAM X of the player's first sprite ($0207), and his sprites
+// are not in the game's OAM page: his Rel_XPos is the same value (his drawing set it), put there
+// meanwhile. It also leaves $06 advanced by four for the next segment: that is for the game's
+// own run, so it is put back.
+void coop_firebar(void) {
+  if (!(coop_on && !away && !fol_in && normal_play())) return;
+  u8 x = ram[0x207], seg = ram[0x06];
+  ram[0x207] = *F(0x3AD);
+  run_as_follower(0xCE0B, 0);
+  ram[0x207] = x; ram[0x06] = seg;
 }
 
 // Moving platforms: the game checks and carries the player in slot 0 only. Its collision flag
