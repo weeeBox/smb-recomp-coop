@@ -336,6 +336,18 @@ d=open('build/t-ram.bin','rb').read()
 print(min(d[f*2048+0xCF+i] for f in range(1800,1860) for i in range(5) if d[f*2048+0x16+i]==0x0D and d[f*2048+0x87+i]==120))"; }
 check "piranha plant stays in its pipe while Luigi is beside it and Mario far (rises with neither)" \
   "$(plant "1625-2400:6D:06,1625-2400:86:60,1625-2400:57:0"):$(plant "0-0:57:0")" "160:136"
+# Lakitu picks a brother at random (the game's random bits, so it varies with the frame Start is
+# pressed) and follows him (4-1). Mario stops at x 322, Luigi is held at x 200 (both with star
+# power). Over frames 1000-1700 Lakitu's mean x stays over Mario (322) when he picked Mario, and
+# moves toward Luigi when he picked him: Start at 200 picks Mario, at 204 Luigi. (Before this
+# rule Lakitu followed the leader only: 322 for both.)
+lak() { COOPSET="380-1700:79F:20,520-1700:6D:00,520-1700:86:C8,520-1700:CE:B0,520-1700:9F:0,520-1700:B5:1,520-1700:57:0" RAMLOG=build/t-ram.bin \
+  $B --cheats "world=4 level=1" --frames 1700 --keys "100:04,104:00,$1:08,$(($1+10)):00,300:82,480:00" --keys2 "380:82,480:00" --poke "380-1700:079F:20" 2>/dev/null
+  python3 -I -c "
+d=open('build/t-ram.bin','rb').read()
+xs=[x for f in range(1000,1700) for x in [d[f*2048+0x6E+i]*256+d[f*2048+0x87+i] for i in range(6) if d[f*2048+0x0F+i] and d[f*2048+0x16+i]==0x11][:1]]
+print('mario' if sum(xs)//len(xs)>=315 else 'luigi' if sum(xs)//len(xs)<280 else sum(xs)//len(xs))"; }
+check "Lakitu follows the brother he picked at random (Mario in one game, Luigi in another)" "$(lak 200):$(lak 204)" "mario:luigi"
 # Whirlpools (2-2, page 4 from x 16 to 112) pull Luigi too: Mario is flown to just past it (4:$8C),
 # Luigi is put inside it (4:$60) at frame 1600; 20 frames on he is 10 pixels nearer its centre.
 COOPSET="1600:6D:4,1600:86:60,1600:CE:40,1600:9F:0,1600:57:0" COOPFREECAM=1 COOPLOG=1 $B --frames 1625 --cheats "world=2 level=2" \

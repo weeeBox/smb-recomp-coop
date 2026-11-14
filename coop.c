@@ -32,9 +32,10 @@
 //   and the follower flashes in the star colours like the leader. Reappearing, he keeps his own
 //   timers (a new brother has none), but a death restart clears them as in the original game.
 //
-// - Enemies that aim at the player (turn to face him, fly or fire at him, hide from him, as the
-//   piranha plants do) aim at the nearer brother, by horizontal distance. A piranha plant stays in
-//   its pipe while either brother is near.
+// - A piranha plant stays in its pipe while either brother is near it. Lakitu picks a brother
+//   at random (the game's own random bits) when he first aims and again after each Spiny he
+//   throws, and follows him. Every other enemy that aims (hammer bros, Bowser, Bullet Bills,
+//   Bloobers) aims at the leader, as before.
 //
 // - Water: whirlpools pull the follower by the same rule as the leader. Air bubbles come from the
 //   leader only: a lone leader keeps all 3 bubble slots busy, so any slot the follower took would
@@ -319,31 +320,30 @@ void coop_fireball(int done) {
 }
 
 static u8 fol_pa;  // his A/B buttons of the frame before: the spring (enemy code, later) wants those
-// Is the follower nearer than the leader (horizontally) to the enemy in slot X?
-static int fol_nearer(void) {
-  if (!coop_on || away || fol_in) return 0;
-  int e = ram[0x6E + X] << 8 | ram[0x87 + X];
-  return abs(e - (*F(0x6D) << 8 | *F(0x86))) < abs(e - (ram[0x6D] << 8 | ram[0x86]));
-}
-
-// $E14C in PlayerEnemyDiff, "sbc Player_PageLoc" (X = the enemy; every enemy that aims at the
-// player asks it: piranha plants, Bullet Bills, hammer bros, Bowser, Lakitu, spawn direction):
-// when the follower is nearer, it answers for him. $00 (the low byte of the difference) is
-// stored already, so redo it; A and the carry are set so the game's own subtraction of the
-// leader's page gives the follower's difference.
+// $E14C in PlayerEnemyDiff, "sbc Player_PageLoc" (X = the enemy): the horizontal difference
+// from "the player", which every enemy that aims asks for. Two of them may get the follower's:
+// a piranha plant when he is nearer (it hides while the nearer brother is close), and Lakitu
+// when he is the brother Lakitu picked. Which enemy asks is read from its JSR's return address.
+// $00 (the low byte) is stored already, so it is redone; A and the carry are set so the game's
+// own subtraction of the leader's page gives the follower's difference.
+static int lakitu_luigi = -1;  // Lakitu's pick: 1 Luigi, 0 Mario, -1 none yet (pick at his next aim)
 void coop_enemy_diff(void) {
-  if (!fol_nearer()) return;
-  int e = ram[0x87 + X];
-  ram[0] = e - *F(0x86); C = e >= *F(0x86);
+  if (!coop_on || away || fol_in) return;
+  u16 ret = ram[0x100 | (u8)(S + 1)] | ram[0x100 | (u8)(S + 2)] << 8;  // the JSR's address + 2
+  int e = ram[0x6E + X] << 8 | ram[0x87 + X], fol;
+  if (ret == 0xD3C3)  // MovePiranhaPlant
+    fol = abs(e - (*F(0x6D) << 8 | *F(0x86))) < abs(e - (ram[0x6D] << 8 | ram[0x86]));
+  else if (ret == 0xCF70) {  // PlayerLakituDiff
+    if (lakitu_luigi < 0) lakitu_luigi = ram[0x7A7] & 1;  // PseudoRandomBitReg: replays stay exact
+    fol = lakitu_luigi == !luigi_leads;  // the follower is Luigi unless Luigi leads
+  } else return;
+  if (!fol) return;
+  ram[0] = ram[0x87 + X] - *F(0x86); C = ram[0x87 + X] >= *F(0x86);
   A += ram[0x6D] - *F(0x6D);
 }
 
-// $CC2D in ChkNearPlayer (a Bloober rises or sinks to the player's height), "cmp Player_Y_Position":
-// when the follower is nearer, A is set so that compare gives the result for his height.
-// ponytail: his height 0 (top of the screen) compares as if Mario's was 1.
-void coop_bloober(void) {
-  if (fol_nearer()) A = A >= *F(0xCE) ? ram[0xCE] : ram[0xCE] - 1;
-}
+// $C3F1 in CreateSpiny, past its checks: Lakitu throws a Spiny, and picks a brother anew.
+void coop_lakitu_pick(void) { lakitu_luigi = -1; }
 
 // $AEF6, right after the leader's GameRoutines: the follower's turn.
 void coop_turn(void) {
@@ -394,6 +394,7 @@ void coop_new_game(void) {
   memset(fol, 0, sizeof fol);
   coop_on = ram[0x77A] == 1;  // NumberOfPlayers: 0 = one player, 1 = two
   luigi_leads = 0; away = 1; fresh_lives = 1; human2 = 0;
+  lakitu_luigi = -1;
   *F(0x754) = 1; *F(0x756) = 0;  // small
   if (coop_on) ram[0x77A] = 0;
 }

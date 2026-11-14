@@ -48,7 +48,7 @@ void coop_weigh(void);
 void coop_spring(int done);
 void coop_scroll(void);
 void coop_enemy_diff(void);
-void coop_bloober(void);
+void coop_lakitu_pick(void);
 void playground_frame(void);
 void playground_area(void);
 u8 playground_rd(u16 a);
