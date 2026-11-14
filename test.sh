@@ -270,6 +270,22 @@ printf '0 keys 00 00\n200 keys 08 00\n210 keys 00 00\n500 cheats time=1\n' > bui
 clock() { $B --replay build/t-rec.txt --frames "$1" --ramdump build/t.bin 2>/dev/null; xxd -p -s 0x7F8 -l 3 build/t.bin; }
 c450=$(clock 450); c600=$(clock 600)
 if [ "$c450" != "$c600" ] && [ "$c600" = "$(clock 900)" ]; then echo "PASS replay: a cheat from its frame on"; else echo "FAIL replay: clock $c450 $c600"; fail=1; fi
+# Springs: Luigi landing on a jumpspring (playground, x=208) is the one it bounces. Mario flies
+# above, Luigi is dropped on it at frame 400; the spring starts at 420. At frame 440 Luigi is
+# well up from the spring's 144 (his Y speed -7), and Mario's Y speed at 432 is no more than
+# gravity's 1 (before the fix the spring launched Mario with -7 and left Luigi standing).
+e=$(COOPFREECAM=1 COOPSET="400:6D:0,400:86:D0,400:CE:70,400:B5:1,400:9F:0,400:1D:2" COOPLOG=1 RAMLOG=build/t-ram.bin $B --frames 441 \
+  --keys "$PGM,370:82,900:00" --poke "380-520:00CE:20,380-520:009F:00,380-520:00B5:01" 2>&1)
+ly=$(echo "$e" | grep '^f440 ' | sed 's/.* y=\([0-9]*\) .*/\1/')
+check "Luigi's spring bounces Luigi, not Mario" "$([ "$(ram 432 9F)" -le 1 ] && echo still || ram 432 9F):$([ "$ly" -lt 130 ] && echo up || echo "$ly")" "still:up"
+# Springs, high bounce and force: Luigi pressing A (from his controller) at 424 gets -12; and with
+# both brothers dropped on the spring and only Mario pressing A (426), Luigi's later bounce is
+# the plain -7 at 446 (JumpspringForce used to be shared, so he got Mario's -12).
+sp() { COOPFREECAM=1 COOPSET="400:6D:0,400:86:D0,400:CE:70,400:B5:1,400:9F:0,400:1D:2" COOPLOG=1 RAMLOG=build/t-ram.bin $B --frames 450 "$@" 2>&1; }
+e=$(sp --keys "$PGM,370:82,900:00" --keys2 "424:01,460:00" --poke "380-520:00CE:20,380-520:009F:00,380-520:00B5:01")
+check "Luigi's high bounce reads his own A" "$(echo "$e" | grep '^f433 ' | sed 's/.*yspd=\(-*[0-9]*\).*/\1/')" "-12"
+e=$(sp --keys "$PGM,426:01,440:00" --poke "400-400:006D:00,400-400:0086:D0,400-400:00CE:70,400-400:009F:00,400-400:00B5:01,400-400:001D:02")
+check "Mario's high bounce is not Luigi's" "$(ram 433 9F):$(echo "$e" | grep '^f446 ' | sed 's/.*yspd=\(-*[0-9]*\).*/\1/')" "244:-7"
 # The ROM is data the user supplies; any other file must be refused.
 $B --rom testroms/nestest.nes --frames 1 >/dev/null 2>&1
 if [ $? = 1 ]; then echo "PASS a different ROM file is refused"; else echo "FAIL a different ROM was accepted"; fail=1; fi
