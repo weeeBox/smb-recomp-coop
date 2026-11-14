@@ -323,6 +323,19 @@ check "Mario's high bounce is not Luigi's" "$(ram 433 9F):$(echo "$e" | grep '^f
 COOPFREECAM=1 COOPSET="600-900:6D:01,600-900:86:E4,600-900:CE:A4,600-900:9F:00,600-900:B5:01" RAMLOG=build/t-ram.bin \
   $B --cheats "world=1 level=4" --frames 901 --keys "$MENU2,300:80" --poke "380-900:00CE:20,380-900:009F:00,380-900:00B5:01,380-900:079F:20" >/dev/null 2>&1
 check "a fire bar kills Luigi" "$(ram 700 0E):$(ram 700 6D)" "11:1"
+# Piranha plant (1-2, page 6 x 120): it stays in its pipe while EITHER brother is within 32 pixels
+# of it. Both brothers walk and hop (star power; Luigi's height held so no pit takes him) to
+# where Mario stops, 120 pixels short of the plant. From frame 1625 Luigi stands beside its pipe
+# (x 1632). The plant's lowest point is its pipe (y 160): over frames 1800-1860 it must stay
+# there (its highest y there is 136: the control, Luigi left behind, rises to it).
+K2=$(python3 -I -c "print('200:08,210:00,300:82,'+','.join('%d:%s'%(f,'83' if (f//20)%2==0 else '82') for f in range(320,1600,20))+',1600:00')")
+plant() { COOPFREECAM=1 COOPSET="700-2400:79F:20,1300-2400:CE:B0,1300-2400:9F:0,1300-2400:B5:1,$1" RAMLOG=build/t-ram.bin $B --frames 1860 \
+  --cheats "world=1 level=2" --keys "100:04,104:00,$K2" --keys2 "$K2" --poke "700-2400:079F:20" 2>/dev/null
+  python3 -I -c "
+d=open('build/t-ram.bin','rb').read()
+print(min(d[f*2048+0xCF+i] for f in range(1800,1860) for i in range(5) if d[f*2048+0x16+i]==0x0D and d[f*2048+0x87+i]==120))"; }
+check "piranha plant stays in its pipe while Luigi is beside it and Mario far (rises with neither)" \
+  "$(plant "1625-2400:6D:06,1625-2400:86:60,1625-2400:57:0"):$(plant "0-0:57:0")" "160:136"
 # The ROM is data the user supplies; any other file must be refused.
 $B --rom testroms/nestest.nes --frames 1 >/dev/null 2>&1
 if [ $? = 1 ]; then echo "PASS a different ROM file is refused"; else echo "FAIL a different ROM was accepted"; fail=1; fi

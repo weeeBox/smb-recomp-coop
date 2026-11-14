@@ -72,3 +72,7 @@ rom-sha1 33d23c2f2cfa4c9efec87f7bc1321ce3ce6c89bd
 # when the last brother's star runs down.
 0 AF41  [AD9F07] coop_star(0);
 0 AF46  [C904]   coop_star(1);
+# PlayerEnemyDiff's last "sbc" (piranha plants, Bullet Bills, hammer bros, Bowser, Lakitu face or move by
+# it) and ChkNearPlayer's "cmp" (Bloober's height): the enemy reacts to the nearer brother.
+0 E14C  [E56D]   coop_enemy_diff();
+0 CC2D  [C5CE]   coop_bloober();

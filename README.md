@@ -59,6 +59,9 @@ Rules:
   flashes in the star colours like Mario. A brother who reappears (new area, joining mid-level)
   keeps his own timers (the star music comes back with him); a new one has none. A death restart
   clears them, as in the original game.
+- Enemies that aim at the player (hammer bros and Bowser facing him, Bullet Bills, Lakitu,
+  Bloobers, piranha plants hiding from him) aim at the nearer brother, by horizontal distance; a
+  piranha plant stays in its pipe while either brother is near.
 - The status bar names the leader (MARIO or LUIGI) over the shared score; Toad and the princess
   thank the brother who touched the axe, and the other walks to them with him.
 
