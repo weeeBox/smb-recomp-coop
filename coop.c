@@ -24,8 +24,9 @@
 // - Moving platforms carry the follower too, and the ones that react to a rider (falling,
 //   balance and start-when-stepped-on platforms) react to either brother.
 //
-// - Water: whirlpools pull the follower by the same rule as the leader, and he breathes bubbles on
-//   his own timer, only while a second bubble slot is free for the leader's.
+// - Water: whirlpools pull the follower by the same rule as the leader. Air bubbles come from the
+//   leader only: a lone leader keeps all 3 bubble slots busy, so any slot the follower took would
+//   hold up the leader's next bubble.
 //
 // - Fire power: the brothers share the game's two fireballs. A brother throws into the next one
 //   if it is free, by the game's own rules.
@@ -65,7 +66,7 @@ static const u16 SLICE[] = {
   0x75A,                           // NumberofLives: each brother has his own (1-ups go to who takes them)
   0x781, 0x782, 0x783, 0x785, 0x789,  // frame timers: anim, jump/swim, running, side collision, climb
   0x79E, 0x79F,                    // interval timers: InjuryTimer StarInvincibleTimer
-  0x47D, 0x792,                    // Whirlpool_Flag (in a whirlpool), AirBubbleTimer (his bubbles' pace)
+  0x47D,                           // Whirlpool_Flag (in a whirlpool)
 };
 #define NSLICE (int)(sizeof SLICE / sizeof SLICE[0])
 // Shared screen state the follower's turn must leave alone: he never scrolls the camera.
@@ -432,17 +433,6 @@ void coop_loopback(void) {
 // $B7B8 ProcessWhirlpools, before the leader's: the follower is pulled by the game's own routine.
 void coop_whirlpool(void) {
   if (coop_on && !away && !fol_in && normal_play()) run_as_follower(0xB7B8, 0);
-}
-
-// $B706 in BubbleCheck, a free bubble slot (X) while the leader's bubble timer hasn't expired: if
-// the follower's has, his bubble takes the slot (SetupBubble with his timer and position), but
-// only if another slot is still free, so he never takes the one the leader's next bubble needs.
-void coop_bubble(void) {
-  if (!coop_on || away || fol_in || !normal_play() || !ram[0x792] || *F(0x792)) return;
-  if ((ram[0xE4] == 0xF8) + (ram[0xE5] == 0xF8) + (ram[0xE6] == 0xF8) < 2) return;
-  swap();
-  call6502(0xB70B);
-  swap();
 }
 
 // $8100, DecTimers: the follower's timers tick by the same rule as the game's. Frame timers

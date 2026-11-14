@@ -54,7 +54,6 @@ extern int coop_bot;
 void coop_frame(void);
 void coop_loopback(void);
 void coop_whirlpool(void);
-void coop_bubble(void);
 void coop_timers(void);
 void coop_draw(void);
 void coop_fireball(int done);

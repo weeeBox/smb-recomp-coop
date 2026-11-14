@@ -63,5 +63,3 @@ rom-sha1 33d23c2f2cfa4c9efec87f7bc1321ce3ce6c89bd
 0 AFC4  [98]     coop_scroll();
 # ProcessWhirlpools: the follower is pulled by whirlpools too (checked before the leader).
 0 B7B8  [AD4E07] coop_whirlpool();
-# BubbleCheck, a free bubble slot (X) with the leader's bubble not due: the follower's bubble.
-0 B706  [AD9207] coop_bubble();

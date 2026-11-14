@@ -275,16 +275,6 @@ if [ "$c450" != "$c600" ] && [ "$c600" = "$(clock 900)" ]; then echo "PASS repla
 COOPSET="1600:6D:4,1600:86:60,1600:CE:40,1600:9F:0,1600:57:0" COOPFREECAM=1 COOPLOG=1 $B --frames 1625 --cheats "world=2 level=2" \
   --keys "$MENU2,800:80,1500:00" --poke "800-1700:00CE:40,800-1700:009F:00,800-1700:00B5:01,800-1700:079F:20,1560-1700:006D:04,1560-1700:0086:8C" 2>&1 | grep '^f1620 ' > build/t-wp.txt
 check "a whirlpool pulls Luigi too" "$(sed 's/.* x=\([0-9]*\) .*/\1/' build/t-wp.txt)" 1110
-# Air bubbles (2-2, both brothers idle, 1800 frames): Luigi breathes some (x 33), and without
-# taking the leader's slots: Mario (x 49) still gets 14 bubbles, as in the one-player game.
-COOPFREECAM=1 RAMLOG=build/t-ram.bin $B --frames 1800 --cheats "world=2 level=2" --keys "$MENU2" 2>/dev/null
-n=$(python3 -I -c "
-import sys; d=open(sys.argv[1],'rb').read(); c={}
-for f in range(1,1800):
-    for x in range(3):
-        if d[(f-1)*2048+0xE4+x]==0xF8 and d[f*2048+0xE4+x]!=0xF8: k=d[f*2048+0x9C+x]; c[k]=c.get(k,0)+1
-print(c.get(49,0), c.get(33,0)>0)" build/t-ram.bin)
-check "Luigi breathes bubbles without holding up Mario's" "$n" "14 True"
 # The ROM is data the user supplies; any other file must be refused.
 $B --rom testroms/nestest.nes --frames 1 >/dev/null 2>&1
 if [ $? = 1 ]; then echo "PASS a different ROM file is refused"; else echo "FAIL a different ROM was accepted"; fail=1; fi
