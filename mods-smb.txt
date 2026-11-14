@@ -76,3 +76,5 @@ rom-sha1 33d23c2f2cfa4c9efec87f7bc1321ce3ce6c89bd
 # it) and ChkNearPlayer's "cmp" (Bloober's height): the enemy reacts to the nearer brother.
 0 E14C  [E56D]   coop_enemy_diff();
 0 CC2D  [C5CE]   coop_bloober();
+# ProcessWhirlpools: the follower is pulled by whirlpools too (checked before the leader).
+0 B7B8  [AD4E07] coop_whirlpool();

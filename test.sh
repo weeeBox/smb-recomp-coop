@@ -336,6 +336,11 @@ d=open('build/t-ram.bin','rb').read()
 print(min(d[f*2048+0xCF+i] for f in range(1800,1860) for i in range(5) if d[f*2048+0x16+i]==0x0D and d[f*2048+0x87+i]==120))"; }
 check "piranha plant stays in its pipe while Luigi is beside it and Mario far (rises with neither)" \
   "$(plant "1625-2400:6D:06,1625-2400:86:60,1625-2400:57:0"):$(plant "0-0:57:0")" "160:136"
+# Whirlpools (2-2, page 4 from x 16 to 112) pull Luigi too: Mario is flown to just past it (4:$8C),
+# Luigi is put inside it (4:$60) at frame 1600; 20 frames on he is 10 pixels nearer its centre.
+COOPSET="1600:6D:4,1600:86:60,1600:CE:40,1600:9F:0,1600:57:0" COOPFREECAM=1 COOPLOG=1 $B --frames 1625 --cheats "world=2 level=2" \
+  --keys "$MENU2,800:80,1500:00" --poke "800-1700:00CE:40,800-1700:009F:00,800-1700:00B5:01,800-1700:079F:20,1560-1700:006D:04,1560-1700:0086:8C" 2>&1 | grep '^f1620 ' > build/t-wp.txt
+check "a whirlpool pulls Luigi too" "$(sed 's/.* x=\([0-9]*\) .*/\1/' build/t-wp.txt)" 1110
 # The ROM is data the user supplies; any other file must be refused.
 $B --rom testroms/nestest.nes --frames 1 >/dev/null 2>&1
 if [ $? = 1 ]; then echo "PASS a different ROM file is refused"; else echo "FAIL a different ROM was accepted"; fail=1; fi

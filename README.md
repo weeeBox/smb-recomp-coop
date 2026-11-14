@@ -53,6 +53,8 @@ Rules:
 - Springs bounce whichever brother landed on them (A held for the high bounce, from his own
   controller); if both are on springs at once, the leader's goes first.
 - Fire bars hurt either brother, by his own star and injury timers.
+- Whirlpools pull both brothers. (Air bubbles rise only from the leader: the game has 3 bubble slots
+  and the leader's rise long enough to keep them all busy, so none is free for the follower.)
 - With fire power either brother throws fireballs; they share the game's two (a throw needs the
   next one free).
 - Each brother has his own star timer: the star music ends when the last star does, and Luigi

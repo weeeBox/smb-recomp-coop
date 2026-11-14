@@ -36,6 +36,10 @@
 //   piranha plants do) aim at the nearer brother, by horizontal distance. A piranha plant stays in
 //   its pipe while either brother is near.
 //
+// - Water: whirlpools pull the follower by the same rule as the leader. Air bubbles come from the
+//   leader only: a lone leader keeps all 3 bubble slots busy, so any slot the follower took would
+//   hold up the leader's next bubble.
+//
 // - Fire power: the brothers share the game's two fireballs. A brother throws into the next one
 //   if it is free, by the game's own rules.
 
@@ -74,6 +78,7 @@ static const u16 SLICE[] = {
   0x75A,                           // NumberofLives: each brother has his own (1-ups go to who takes them)
   0x781, 0x782, 0x783, 0x785, 0x789,  // frame timers: anim, jump/swim, running, side collision, climb
   0x79E, 0x79F,                    // interval timers: InjuryTimer StarInvincibleTimer
+  0x47D,                           // Whirlpool_Flag (in a whirlpool)
 };
 #define NSLICE (int)(sizeof SLICE / sizeof SLICE[0])
 // Shared screen state the follower's turn must leave alone: he never scrolls the camera.
@@ -514,6 +519,11 @@ void coop_spring(int done) {
 // $C08C, ExecGameLoopback (a castle maze sends the leader back four pages): the follower too.
 void coop_loopback(void) {
   if (coop_on && !away) *F(0x6D) -= 4;
+}
+
+// $B7B8 ProcessWhirlpools, before the leader's: the follower is pulled by the game's own routine.
+void coop_whirlpool(void) {
+  if (coop_on && !away && !fol_in && normal_play()) run_as_follower(0xB7B8, 0);
 }
 
 // $8100, DecTimers: the follower's timers tick by the same rule as the game's. Frame timers
